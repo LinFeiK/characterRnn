@@ -2,7 +2,17 @@ import torch
 from torch import nn
 import numpy as np
 
-sample_text = ['have a great weekend', 'oranges are orange', 'toronto is a lively place']
+# read input from simple text file
+data = open('input.txt', 'r').read()
+
+# get the list of unique characters
+chars = list(set(data))
+
+data_size, vocab_size = len(data), len(chars)
+print('data has', data_size, 'characters,', vocab_size, 'unique')
+
+# split input text into strings
+sample_text = data.split('\n')
 
 # a dictionary that maps characters to ints
 char_to_idx = {"a": 1, "c": 2, "d": 3, "e": 4, "g": 5, "h": 6, "i": 7, "k": 8, "l": 9, "n": 10, "o": 11, "p": 12,
