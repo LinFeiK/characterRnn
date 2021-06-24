@@ -46,13 +46,9 @@ for i in range(sample_text_length):
 # convert lists to Tensors
 input_array = np.array(input_seq)
 input_tensor = torch.from_numpy(input_array).float()
-# print(input_array.shape)
-# print(input_tensor.shape)
 
 output_array = np.array(output_seq)
 output_tensor = torch.Tensor(output_array)
-# print(output_tensor)
-# print(output_array)
 
 # check that torch.cuda is available
 is_cuda = torch.cuda.is_available()
@@ -78,28 +74,24 @@ class Model(nn.Module):
         self.fc = nn.Linear(hidden_dim, vocab_size)  # Fully connected layer - converts RNN output to desired output shape
 
     def forward(self, x):
-        batch_size = x.size(0)
         # initialize hidden state
-        hidden = self.init_hidden(batch_size)
+        hidden = self.init_hidden()
 
         outputs = []
         for i in range(max_len):
-
-            # print("x: ", x[:,:,i].shape)
             # pass in input and hidden state into model to get output for first layer
             out, hidden = self.rnn(x[:,:,i].reshape(sample_text_length, 1, 1), hidden)
 
             # reshape the output to fit into fully connected layer
-            # print("out ", out.shape)
             out = out.contiguous().view(-1, self.hidden_dim)
-            # print("out ", out.shape)
+
             out = self.fc(out)
-            # print("out ", out.shape)
+
             outputs.append(out.unsqueeze(dim=0))
 
         return torch.cat(outputs, dim=0).permute(1, 0, 2), hidden
 
-    def init_hidden(self, batch_size):
+    def init_hidden(self):
         # creates first hidden state of zeros
         hidden = torch.zeros(self.n_layers, sample_text_length, self.hidden_dim)
         return hidden
@@ -108,9 +100,6 @@ class Model(nn.Module):
 # prints, for each of the sample_text_length sentences, which sentence the model believes is the most likely to occur
 # argument is a tensor of shape (sample_text_length, max_len, vocab_size)
 def get_output(prob_output):
-    # print(prob_output)
-    # print(prob_output[0])
-    # print(max(prob_output[0]))
     sentence = ""
     for j in range(sample_text_length):
         for k in range(max_len):
@@ -144,13 +133,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 input_tensor = input_tensor.to(device)
 for epoch in range(1, n_epochs + 1):
     optimizer.zero_grad()  # clears gradients
-    # print(input_tensor.unsqueeze(dim=0).shape)
     output, hidden = model(input_tensor.unsqueeze(dim=0))
-    # output = output.to(device)
-    # output_tensor = output_tensor.to(device)
-    # print(output.shape)
-    # print(output_tensor.shape)
-    # print(output_tensor)
     loss = criterion(output.reshape(sample_text_length*max_len, vocab_size), output_tensor.view(-1).long())
     loss.backward()  # does backprop and calculates gradients
 
