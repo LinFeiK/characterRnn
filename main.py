@@ -2,6 +2,11 @@ import torch
 from torch import nn
 import numpy as np
 
+# indicate which rule training method should be used
+is_loss_penalty = True
+loss_penalty = 0.2
+is_prob_adjustment = False
+
 # read input from simple text file
 data = open('quwords-training-100.txt', 'r').read()
 
@@ -113,6 +118,34 @@ def get_output(prob_output, text_length, text):
                 sentence = ""
 
 
+# returns whether the rule to train has been violated. In this case, whether at least one of the words contain
+# the letter 'q' not followed by the letter 'u'
+def isRuleViolated(output, text_length, text):
+    sentence = ""
+    for j in range(text_length):
+        for k in range(max_len):
+            # gets the index of the highest value among the vocab_size possible choices
+            char_index = output[j][k].tolist().index(max(output[j][k]))
+            sentence += idx_to_char[char_index]
+
+            if max_len <= 1:
+                return True
+
+            # once we get to the end of the sentence, reset the sentence
+            if k == max_len - 1:
+                for m in range(max_len):
+                    if m != 0:
+                        previous = sentence[m - 1]
+                        current = sentence[m]
+
+                        if previous == 'q' and current != 'u':
+                            str_sentence = str(sentence).strip('[]')
+                            print("input: ", text[j], "violation of the rule: ", str_sentence)
+                            return True
+                sentence = ""
+    return False
+
+
 dict_size = len(char_to_idx)  # number of unique chars in sample_text
 
 # instantiate the model with hyperparameters
@@ -135,6 +168,11 @@ for epoch in range(1, n_epochs + 1):
     optimizer.zero_grad()  # clears gradients
     output, hidden = model(input_tensor.unsqueeze(dim=0), sample_text_length)
     loss = criterion(output.reshape(sample_text_length*max_len, vocab_size), output_tensor.view(-1).long())
+
+    if is_loss_penalty:
+        if isRuleViolated(output, sample_text_length, sample_text):
+            loss += loss_penalty
+
     loss.backward()  # does backprop and calculates gradients
 
     optimizer.step()  # updates the weights accordingly
@@ -142,8 +180,8 @@ for epoch in range(1, n_epochs + 1):
     if epoch % 10 == 0:
         print('Epoch: {}/{}.............'.format(epoch, n_epochs), end=' ')
         print("Loss: {:.4f}".format(loss.item()))
-    # if epoch % 50 == 0:
-    #     get_output(output, sample_text_length)
+    if epoch % 100 == 0:
+        get_output(output, sample_text_length, sample_text)
 
 # testing
 test_data = open('quwords-test-10.txt', 'r').read()
@@ -170,4 +208,5 @@ test_output_tensor = torch.Tensor(test_output_array)
 
 test_input_tensor = test_input_tensor.to(device)
 output, hidden = model(test_input_tensor.unsqueeze(dim=0), test_text_length)
+print("\nTEST PHASE \n")
 get_output(output, test_text_length, test_data)
