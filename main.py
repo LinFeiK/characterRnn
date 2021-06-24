@@ -23,8 +23,10 @@ idx_to_char = {i: ch for i, ch in enumerate(chars)}
 # find the length of the longest string in the sample text
 max_len = len(max(sample_text, key=len))
 
+sample_text_length = len(sample_text)
+
 # add padding to sequences so that they are all the same length as max_len
-for i in range(len(sample_text)):
+for i in range(sample_text_length):
     while len(sample_text[i]) < max_len:
         sample_text[i] += ' '
 
@@ -73,7 +75,7 @@ class Model(nn.Module):
 
         # define layers
         self.rnn = nn.RNN(input_size, hidden_dim, n_layers, batch_first=True)  # RNN layer
-        self.fc = nn.Linear(hidden_dim, 19)  # Fully connected layer - converts RNN output to desired output shape
+        self.fc = nn.Linear(hidden_dim, vocab_size)  # Fully connected layer - converts RNN output to desired output shape
 
     def forward(self, x):
         batch_size = x.size(0)
@@ -81,11 +83,11 @@ class Model(nn.Module):
         hidden = self.init_hidden(batch_size)
 
         outputs = []
-        for i in range(25):
+        for i in range(max_len):
 
             # print("x: ", x[:,:,i].shape)
             # pass in input and hidden state into model to get output for first layer
-            out, hidden = self.rnn(x[:,:,i].reshape(3, 1, 1), hidden)
+            out, hidden = self.rnn(x[:,:,i].reshape(sample_text_length, 1, 1), hidden)
 
             # reshape the output to fit into fully connected layer
             # print("out ", out.shape)
@@ -99,23 +101,22 @@ class Model(nn.Module):
 
     def init_hidden(self, batch_size):
         # creates first hidden state of zeros
-        hidden = torch.zeros(self.n_layers, 3, self.hidden_dim)
+        hidden = torch.zeros(self.n_layers, sample_text_length, self.hidden_dim)
         return hidden
 
 
-# prints, for each of the 3 sentences, which sentence the model believes is the most likely to occur
-# argument is a tensor of shape (3, 25, 19)
+# prints, for each of the sample_text_length sentences, which sentence the model believes is the most likely to occur
+# argument is a tensor of shape (sample_text_length, max_len, vocab_size)
 def get_output(prob_output):
     # print(prob_output)
     # print(prob_output[0])
     # print(max(prob_output[0]))
     sentence = ""
-    for j in range(3):
-        for k in range(25):
-            # gets the index of the highest value among the 19 possible choices
-            # (starts at 0, so with our dict we need to add 1)
+    for j in range(sample_text_length):
+        for k in range(max_len):
+            # gets the index of the highest value among the vocab_size possible choices
             char_index = prob_output[j][k].tolist().index(max(prob_output[j][k]))
-            sentence += idx_to_char[char_index + 1]
+            sentence += idx_to_char[char_index]
             # once we get to the end of the sentence, print what the model thinks is the most likely sentence
             if k == 24:
                 print("input:  ", sample_text[j])
@@ -130,7 +131,7 @@ model = Model(input_size=1, output_size=dict_size, hidden_dim=12, n_layers=1)
 # set the model to the device that we defined earlier (default is CPU)
 model.to(device)
 
-batch_size = len(sample_text)
+batch_size = sample_text_length
 # define hyperparameters
 n_epochs = 200
 lr = 0.01
@@ -150,7 +151,7 @@ for epoch in range(1, n_epochs + 1):
     # print(output.shape)
     # print(output_tensor.shape)
     # print(output_tensor)
-    loss = criterion(output.reshape(3*25,19), output_tensor.view(-1).long() - 1)
+    loss = criterion(output.reshape(sample_text_length*max_len, vocab_size), output_tensor.view(-1).long())
     loss.backward()  # does backprop and calculates gradients
 
     optimizer.step()  # updates the weights accordingly
