@@ -3,7 +3,7 @@ from torch import nn
 import numpy as np
 
 # read input from simple text file
-data = open('input.txt', 'r').read()
+data = open('quwords-training-100.txt', 'r').read()
 
 # get the list of unique characters
 chars = list(set(data))
@@ -73,14 +73,14 @@ class Model(nn.Module):
         self.rnn = nn.RNN(input_size, hidden_dim, n_layers, batch_first=True)  # RNN layer
         self.fc = nn.Linear(hidden_dim, vocab_size)  # Fully connected layer - converts RNN output to desired output shape
 
-    def forward(self, x):
+    def forward(self, x, text_length):
         # initialize hidden state
-        hidden = self.init_hidden()
+        hidden = self.init_hidden(text_length)
 
         outputs = []
         for i in range(max_len):
             # pass in input and hidden state into model to get output for first layer
-            out, hidden = self.rnn(x[:,:,i].reshape(sample_text_length, 1, 1), hidden)
+            out, hidden = self.rnn(x[:,:,i].reshape(text_length, 1, 1), hidden)
 
             # reshape the output to fit into fully connected layer
             out = out.contiguous().view(-1, self.hidden_dim)
@@ -91,24 +91,24 @@ class Model(nn.Module):
 
         return torch.cat(outputs, dim=0).permute(1, 0, 2), hidden
 
-    def init_hidden(self):
+    def init_hidden(self, text_length):
         # creates first hidden state of zeros
-        hidden = torch.zeros(self.n_layers, sample_text_length, self.hidden_dim)
+        hidden = torch.zeros(self.n_layers, text_length, self.hidden_dim)
         return hidden
 
 
 # prints, for each of the sample_text_length sentences, which sentence the model believes is the most likely to occur
 # argument is a tensor of shape (sample_text_length, max_len, vocab_size)
-def get_output(prob_output):
+def get_output(prob_output, text_length, text):
     sentence = ""
-    for j in range(sample_text_length):
+    for j in range(text_length):
         for k in range(max_len):
             # gets the index of the highest value among the vocab_size possible choices
             char_index = prob_output[j][k].tolist().index(max(prob_output[j][k]))
             sentence += idx_to_char[char_index]
             # once we get to the end of the sentence, print what the model thinks is the most likely sentence
             if k == max_len - 1:
-                print("input:  ", sample_text[j])
+                print("input:  ", text[j])
                 print("output: ", str(sentence).strip('[]'))
                 sentence = ""
 
@@ -133,7 +133,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 input_tensor = input_tensor.to(device)
 for epoch in range(1, n_epochs + 1):
     optimizer.zero_grad()  # clears gradients
-    output, hidden = model(input_tensor.unsqueeze(dim=0))
+    output, hidden = model(input_tensor.unsqueeze(dim=0), sample_text_length)
     loss = criterion(output.reshape(sample_text_length*max_len, vocab_size), output_tensor.view(-1).long())
     loss.backward()  # does backprop and calculates gradients
 
@@ -142,5 +142,32 @@ for epoch in range(1, n_epochs + 1):
     if epoch % 10 == 0:
         print('Epoch: {}/{}.............'.format(epoch, n_epochs), end=' ')
         print("Loss: {:.4f}".format(loss.item()))
-    if epoch % 50 == 0:
-        get_output(output)
+    # if epoch % 50 == 0:
+    #     get_output(output, sample_text_length)
+
+# testing
+test_data = open('quwords-test-10.txt', 'r').read()
+test_data = test_data.split('\n')
+
+test_text_length = len(test_data)
+
+test_input_seq = []
+test_output_seq = []
+
+for i in range(test_text_length):
+    test_input_seq.append(test_data[i])
+    test_output_seq.append(test_data[i])
+
+for i in range(test_text_length):
+    test_input_seq[i] = [char_to_idx[char] for char in test_input_seq[i]]
+    test_output_seq[i] = [char_to_idx[char] for char in test_output_seq[i]]
+
+test_input_array = np.array(test_input_seq)
+test_input_tensor = torch.from_numpy(test_input_array).float()
+
+test_output_array = np.array(test_output_seq)
+test_output_tensor = torch.Tensor(test_output_array)
+
+test_input_tensor = test_input_tensor.to(device)
+output, hidden = model(test_input_tensor.unsqueeze(dim=0), test_text_length)
+get_output(output, test_text_length, test_data)
