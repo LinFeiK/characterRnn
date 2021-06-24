@@ -107,7 +107,7 @@ def get_output(prob_output):
             char_index = prob_output[j][k].tolist().index(max(prob_output[j][k]))
             sentence += idx_to_char[char_index]
             # once we get to the end of the sentence, print what the model thinks is the most likely sentence
-            if k == 24:
+            if k == max_len - 1:
                 print("input:  ", sample_text[j])
                 print("output: ", str(sentence).strip('[]'))
                 sentence = ""
