@@ -15,12 +15,10 @@ print('data has', data_size, 'characters,', vocab_size, 'unique')
 sample_text = data.split('\n')
 
 # a dictionary that maps characters to ints
-char_to_idx = {"a": 1, "c": 2, "d": 3, "e": 4, "g": 5, "h": 6, "i": 7, "k": 8, "l": 9, "n": 10, "o": 11, "p": 12,
-               "r": 13, "s": 14, "t": 15, "v": 16, "w": 17, "y": 18, ' ': 19}
+char_to_idx = {ch: i for i, ch in enumerate(chars)}
 
 # a dictionary that maps the ints back to characters
-idx_to_char = {1: "a", 2: "c", 3: "d", 4: "e", 5: "g", 6: "h", 7: "i", 8: "k", 9: "l", 10: "n", 11: "o", 12: "p",
-               13: "r", 14: "s", 15: "t", 16: "v", 17: "w", 18: "y", 19: ' '}
+idx_to_char = {i: ch for i, ch in enumerate(chars)}
 
 # find the length of the longest string in the sample text
 max_len = len(max(sample_text, key=len))
@@ -34,12 +32,12 @@ for i in range(len(sample_text)):
 input_seq = []
 output_seq = []
 
-for i in range(len(sample_text)):
+for i in range(sample_text_length):
     input_seq.append(sample_text[i])
     output_seq.append(sample_text[i])
 
 # convert chars to ints
-for i in range(len(sample_text)):
+for i in range(sample_text_length):
     input_seq[i] = [char_to_idx[char] for char in input_seq[i]]
     output_seq[i] = [char_to_idx[char] for char in output_seq[i]]
 
