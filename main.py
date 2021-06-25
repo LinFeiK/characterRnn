@@ -3,9 +3,10 @@ from torch import nn
 import numpy as np
 
 # indicate which rule training method should be used
-is_loss_penalty = True
+is_loss_penalty = False
 loss_penalty = 0.2
-is_prob_adjustment = False
+is_prob_adjustment = True
+prob_adjustment = 0.5
 
 # read input from simple text file
 data = open('quwords-training-100.txt', 'r').read()
@@ -21,6 +22,8 @@ sample_text = data.split('\n')
 
 # a dictionary that maps characters to ints
 char_to_idx = {ch: i for i, ch in enumerate(chars)}
+q_index = char_to_idx['q']
+u_index = char_to_idx['u']
 
 # a dictionary that maps the ints back to characters
 idx_to_char = {i: ch for i, ch in enumerate(chars)}
@@ -66,6 +69,25 @@ else:
     print("GPU not available, CPU used")
 
 
+# Adjust the probabilities in outputs (size [text_length, max_len, dict_size]) such that if the max probability
+# of the previous letter corresponds to 'q', the probability of the current letter at 'u' should rise. If the max
+# probability of the current letter is at 'q' and we are at the end of the word, lower that probability.
+def adjust_probabilities(outputs, text_length):
+    for j in range(text_length):
+        for k in range(max_len):
+            if k != 0:
+                prev_predicted_char_index = outputs[j][k - 1].tolist().index(max(outputs[j][k - 1]))
+                current_predicted_char_index = outputs[j][k].tolist().index(max(outputs[j][k]))
+
+                if prev_predicted_char_index == q_index and current_predicted_char_index != u_index:
+                    # increase the probability of having a 'u' after 'q'
+                    outputs[j][k][u_index] += prob_adjustment
+
+                if k == max_len - 1 and current_predicted_char_index == q_index:
+                    # decrease the probability of having a 'q' at the end of the word
+                    outputs[j][k][q_index] -= prob_adjustment
+
+
 class Model(nn.Module):
     def __init__(self, input_size, output_size, hidden_dim, n_layers):
         super(Model, self).__init__()
@@ -85,7 +107,7 @@ class Model(nn.Module):
         outputs = []
         for i in range(max_len):
             # pass in input and hidden state into model to get output for first layer
-            out, hidden = self.rnn(x[:,:,i].reshape(text_length, 1, 1), hidden)
+            out, hidden = self.rnn(x[:, :, i].reshape(text_length, 1, 1), hidden)
 
             # reshape the output to fit into fully connected layer
             out = out.contiguous().view(-1, self.hidden_dim)
@@ -94,7 +116,14 @@ class Model(nn.Module):
 
             outputs.append(out.unsqueeze(dim=0))
 
-        return torch.cat(outputs, dim=0).permute(1, 0, 2), hidden
+        outputs = torch.cat(outputs, dim=0).permute(1, 0, 2)  # size [100, 6, 24]
+        if is_prob_adjustment:
+            # for every word, for each of the max_len characters, if the max prob for the previous letter
+            # is the one at index q, then adjust the prob for the current letter at index u so that it
+            # is a little higher than its current probability. If the current max is at index q and
+            # the letter is the last letter, adjust the probability down so that the word is less likely to end with q.
+            adjust_probabilities(outputs, text_length)
+        return outputs, hidden
 
     def init_hidden(self, text_length):
         # creates first hidden state of zeros
@@ -210,3 +239,4 @@ test_input_tensor = test_input_tensor.to(device)
 output, hidden = model(test_input_tensor.unsqueeze(dim=0), test_text_length)
 print("\nTEST PHASE \n")
 get_output(output, test_text_length, test_data)
+
