@@ -69,9 +69,10 @@ else:
     print("GPU not available, CPU used")
 
 
-# Adjust the probabilities in outputs (shape (text_length, max_len, vocab_size)) such that if the max probability
-# of the previous letter corresponds to 'q', the probability of the current letter at 'u' should rise. If the max
-# probability of the current letter is at 'q' and we are at the end of the word, lower that probability.
+# adjust the probabilities in outputs (shape (text_length, max_len, vocab_size)) such that if the max probability
+# of the previous letter corresponds to 'q', the probability of the current letter at 'u' should raise if it
+# wasn't the max. If the max probability of the current letter is at 'q' and we are at the end of the word,
+# lower that probability.
 def adjust_probabilities(outputs, text_length):
     for j in range(text_length):
         for k in range(max_len):
@@ -118,9 +119,9 @@ class Model(nn.Module):
 
         outputs = torch.cat(outputs, dim=0).permute(1, 0, 2)  # shape (text_length, max_len, vocab_size)
         if is_prob_adjustment:
-            # for every word, for each of the max_len characters, if the max prob for the previous letter
-            # is the one at index q, then adjust the prob for the current letter at index u so that it
-            # is a little higher than its current probability. If the current max is at index q and
+            # for every word, for each of the max_len characters, if the max prob for the previous letter is the one
+            # at index q, then adjust the prob for the current letter at index u so that it is a little higher
+            # than its current probability, if it wasn't the highest probability. If the current max is at index q and
             # the letter is the last letter, adjust the probability down so that the word is less likely to end with q.
             adjust_probabilities(outputs, text_length)
         return outputs, hidden
@@ -148,7 +149,7 @@ def get_output(prob_output, text_length, text):
 
 
 # returns whether the rule to train has been violated. In this case, whether at least one of the words contain
-# the letter 'q' not followed by the letter 'u'
+# the letter 'q' not followed by the letter 'u'.
 def is_rule_violated(outputs, text_length, text):
     word = ""
     for j in range(text_length):
