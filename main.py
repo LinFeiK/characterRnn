@@ -69,7 +69,7 @@ else:
     print("GPU not available, CPU used")
 
 
-# Adjust the probabilities in outputs (size [text_length, max_len, dict_size]) such that if the max probability
+# Adjust the probabilities in outputs (shape (text_length, max_len, vocab_size)) such that if the max probability
 # of the previous letter corresponds to 'q', the probability of the current letter at 'u' should rise. If the max
 # probability of the current letter is at 'q' and we are at the end of the word, lower that probability.
 def adjust_probabilities(outputs, text_length):
@@ -116,7 +116,7 @@ class Model(nn.Module):
 
             outputs.append(out.unsqueeze(dim=0))
 
-        outputs = torch.cat(outputs, dim=0).permute(1, 0, 2)  # size [100, 6, 24]
+        outputs = torch.cat(outputs, dim=0).permute(1, 0, 2)  # shape (text_length, max_len, vocab_size)
         if is_prob_adjustment:
             # for every word, for each of the max_len characters, if the max prob for the previous letter
             # is the one at index q, then adjust the prob for the current letter at index u so that it
