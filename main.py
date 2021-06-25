@@ -120,29 +120,29 @@ def get_output(prob_output, text_length, text):
 
 # returns whether the rule to train has been violated. In this case, whether at least one of the words contain
 # the letter 'q' not followed by the letter 'u'
-def isRuleViolated(output, text_length, text):
-    sentence = ""
+def is_rule_violated(outputs, text_length, text):
+    word = ""
     for j in range(text_length):
         for k in range(max_len):
             # gets the index of the highest value among the vocab_size possible choices
-            char_index = output[j][k].tolist().index(max(output[j][k]))
-            sentence += idx_to_char[char_index]
+            char_index = outputs[j][k].tolist().index(max(outputs[j][k]))
+            word += idx_to_char[char_index]
 
             if max_len <= 1:
                 return True
 
-            # once we get to the end of the sentence, reset the sentence
+            # check if there is a 'q' that is not followed by a 'u'
             if k == max_len - 1:
                 for m in range(max_len):
                     if m != 0:
-                        previous = sentence[m - 1]
-                        current = sentence[m]
+                        previous = word[m - 1]
+                        current = word[m]
 
-                        if previous == 'q' and current != 'u':
-                            str_sentence = str(sentence).strip('[]')
+                        if (previous == 'q' and current != 'u') or (current == 'q' and m == max_len - 1):
+                            str_sentence = str(word).strip('[]')
                             print("input: ", text[j], "violation of the rule: ", str_sentence)
                             return True
-                sentence = ""
+                word = ""
     return False
 
 
@@ -170,7 +170,7 @@ for epoch in range(1, n_epochs + 1):
     loss = criterion(output.reshape(sample_text_length*max_len, vocab_size), output_tensor.view(-1).long())
 
     if is_loss_penalty:
-        if isRuleViolated(output, sample_text_length, sample_text):
+        if is_rule_violated(output, sample_text_length, sample_text):
             loss += loss_penalty
 
     loss.backward()  # does backprop and calculates gradients
