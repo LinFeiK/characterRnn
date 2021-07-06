@@ -5,14 +5,16 @@ import numpy as np
 # indicate which rule training method should be used
 is_loss_penalty = False
 loss_penalty = 0.2
-is_prob_adjustment = True
+is_prob_adjustment = False
 prob_adjustment = 0.5
 
-# read input from simple text file
+# read input and test words from simple text files
 data = open('quwords-training-100.txt', 'r').read()
+test_data = open('quwords-test-10.txt', 'r').read()
+full_data = data + ' \n' + test_data
 
 # get the list of unique characters
-chars = list(set(data))
+chars = list(set(full_data))
 
 data_size, vocab_size = len(data), len(chars)
 print('data has', data_size, 'characters,', vocab_size, 'unique')
@@ -214,7 +216,6 @@ for epoch in range(1, n_epochs + 1):
         get_output(output, sample_text_length, sample_text)
 
 # testing
-test_data = open('quwords-test-10.txt', 'r').read()
 test_data = test_data.split('\n')
 
 test_text_length = len(test_data)
