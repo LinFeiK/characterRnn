@@ -35,6 +35,7 @@ qigong
 qindar
 qintar
 qiviut
+qulliq
 qwerty
 sheqel
 tranqs
@@ -50,6 +51,7 @@ qigongs
 qindars
 qintars
 qiviuts
+qulliqs
 qwertys
 sheqels
 kamotiqs

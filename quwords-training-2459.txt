@@ -255,7 +255,6 @@ aquafit
 aquaria
 aquatic
 aquavit
-aqueous
 aquifer
 aquiver
 asquint
@@ -326,7 +325,6 @@ liquate
 liquefy
 liqueur
 liquids
-liquidy
 liquify
 liquors
 loquats
@@ -1133,7 +1131,6 @@ jequirity
 lacquered
 lacquerer
 lacqueyed
-liquating
 liquation
 liquefied
 liquefier
@@ -1191,7 +1188,6 @@ quaaludes
 quackiest
 quackisms
 quadrants
-quadrated
 quadrates
 quadratic
 quadrigae
@@ -1343,7 +1339,6 @@ sobriquet
 soliloquy
 soliquids
 squabbier
-squabbled
 squabbler
 squabbles
 squaddies
@@ -1625,7 +1620,6 @@ quandaries
 quantified
 quantifier
 quantifies
-quantising
 quantitate
 quantities
 quantizers
@@ -1911,7 +1905,6 @@ perquisites
 picaresques
 picturesque
 piquantness
-plateresque
 preconquest
 propinquity
 quacksalver
@@ -2252,12 +2245,10 @@ equiponderant
 equipotential
 equitableness
 equivalencies
-equivocalness
 equivocations
 exquisiteness
 frequentation
 frequentative
-grandiloquent
 grotesqueness
 grotesqueries
 gyrofrequency
@@ -2268,7 +2259,6 @@ hydroquinones
 illiquidities
 inconsequence
 infrequencies
-inquisitional
 inquisitively
 inquisitorial
 liquefactions

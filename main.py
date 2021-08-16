@@ -3,16 +3,18 @@ from torch import nn
 import numpy as np
 
 # indicate which rule training method should be used
-is_loss_penalty = False
-loss_penalty = 0.2
-is_prob_adjustment = True
-prob_adjustment = 0.5
+is_loss_penalty = False  # cross-entropy between letters
+loss_penalty = 0.1
+is_prob_adjustment = False  # adjusting the model's probabilities before output
+prob_adjustment = 0.1
 
-# read input from simple text file
-data = open('quwords-training-100.txt', 'r').read()
+# read input and test words from simple text files
+data = open('quwords-training-2459-fr.txt', 'r').read()
+test_data = open('quwords-test-10-fr.txt', 'r').read()
+full_data = data + ' \n' + test_data
 
 # get the list of unique characters
-chars = list(set(data))
+chars = list(set(full_data))
 
 data_size, vocab_size = len(data), len(chars)
 print('data has', data_size, 'characters,', vocab_size, 'unique')
@@ -29,7 +31,9 @@ u_index = char_to_idx['u']
 idx_to_char = {i: ch for i, ch in enumerate(chars)}
 
 # find the length of the longest string in the sample text
-max_len = len(max(sample_text, key=len))
+# max_len = len(max(sample_text, key=len))
+# maximum length of an English word with the letter 'q'
+max_len = 16
 
 sample_text_length = len(sample_text)
 
@@ -132,10 +136,27 @@ class Model(nn.Module):
         return hidden
 
 
+# returns the number of rule violations in the word
+def calculate_violations(word):
+    if len(word) == 1:
+        return 1
+
+    violations = 0
+    for j in range(max_len):
+        if j != 0:
+            prev = word[j - 1]
+            curr = word[j]
+            if (prev == 'q' and curr != 'u') or (j == max_len - 1 and curr == 'q'):
+                violations += 1
+    return violations
+
+
 # prints, for each of the sample_text_length sentences, which sentence the model believes is the most likely to occur
 # argument is a tensor of shape (sample_text_length, max_len, vocab_size)
-def get_output(prob_output, text_length, text):
+# also prints out how many rule violations there are in the output, if print_rule_violations is set to True
+def get_output(prob_output, text_length, text, print_rule_violations=False):
     sentence = ""
+    num_violations = 0
     for j in range(text_length):
         for k in range(max_len):
             # gets the index of the highest value among the vocab_size possible choices
@@ -144,12 +165,18 @@ def get_output(prob_output, text_length, text):
             # once we get to the end of the sentence, print what the model thinks is the most likely sentence
             if k == max_len - 1:
                 print("input:  ", text[j])
-                print("output: ", str(sentence).strip('[]'))
+                sentence = str(sentence).strip('[]')
+                print("output: ", sentence)
+                if print_rule_violations:
+                    num_violations += calculate_violations(sentence)
                 sentence = ""
+    if print_rule_violations:
+        print(num_violations, "rule violations")
 
 
 # returns whether the rule to train has been violated. In this case, whether at least one of the words contain
-# the letter 'q' not followed by the letter 'u'.
+# the letter 'q' not followed by the letter 'u'. Outputs has 3 dimensions (i, j, k), where i is the number of lines
+# in the .txt file, j is the max_len, and k is the vocabulary size.
 def is_rule_violated(outputs, text_length, text):
     word = ""
     for j in range(text_length):
@@ -214,10 +241,14 @@ for epoch in range(1, n_epochs + 1):
         get_output(output, sample_text_length, sample_text)
 
 # testing
-test_data = open('quwords-test-10.txt', 'r').read()
 test_data = test_data.split('\n')
 
 test_text_length = len(test_data)
+
+# add padding to sequences so that they are all the same length as max_len
+for i in range(test_text_length):
+    while len(test_data[i]) < max_len:
+        test_data[i] += ' '
 
 test_input_seq = []
 test_output_seq = []
@@ -239,5 +270,5 @@ test_output_tensor = torch.Tensor(test_output_array)
 test_input_tensor = test_input_tensor.to(device)
 output, hidden = model(test_input_tensor.unsqueeze(dim=0), test_text_length)
 print("\nTEST PHASE \n")
-get_output(output, test_text_length, test_data)
+get_output(output, test_text_length, test_data, True)
 
