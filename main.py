@@ -9,8 +9,8 @@ is_prob_adjustment = False  # adjusting the model's probabilities before output
 prob_adjustment = 0.1
 
 # read input and test words from simple text files
-data = open('quwords-training-100.txt', 'r').read()
-test_data = open('quwords-test-10.txt', 'r').read()
+data = open('quwords-training-2459-fr.txt', 'r').read()
+test_data = open('quwords-test-10-fr.txt', 'r').read()
 full_data = data + ' \n' + test_data
 
 # get the list of unique characters
