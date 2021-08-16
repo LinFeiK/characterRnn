@@ -195,7 +195,6 @@ quirky
 quirts
 quitch
 quiver
-qulliq
 quohog
 quoins
 quoits
@@ -475,7 +474,6 @@ quixote
 quizzed
 quizzer
 quizzes
-qulliqs
 quohogs
 quoined
 quoited
